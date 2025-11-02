@@ -24,7 +24,7 @@ services:
     healthCheckPath: /
     startCommand: >
       npx prisma migrate deploy &&
-      npx tsx src/app/lib/seeds/assign-superAdmin.ts &&
+      npx tsx src/seeds/run-seeds.ts &&
       npx tsx src/app/lib/sync-permissions.ts &&
       npm start
 
