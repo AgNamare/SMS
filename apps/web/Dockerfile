@@ -71,4 +71,5 @@ EXPOSE 3000
 # Run migrations, seed superadmin, sync permissions, then start Next.js
 # FIX for "unknown instruction: node": The command chain must be wrapped in a single
 # shell execution block using the exec form of CMD to span multiple operations.
-CMD ["/bin/sh", "-c", "npx prisma migrate deploy && node --loader ts-node/esm src/app/lib/seeds/assign-superAdmin.ts && node --loader ts-node/esm src/app/lib/sync-permissions.ts && npm start"]
+CMD ["/bin/sh", "-c", "npx prisma migrate deploy && npx tsx src/seeds/run-seeds.ts && npm start"]
+
