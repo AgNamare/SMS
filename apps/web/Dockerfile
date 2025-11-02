@@ -41,11 +41,9 @@ COPY --from=builder /app/src ./src
 # Install production dependencies only
 RUN npm ci --omit=dev
 
-# ✅ Apply migrations first
-RUN npx prisma migrate deploy
-
-# ✅ Seed Super Admin after migrations
-RUN node src/app/lib/seeds/assign-superAdmin.ts || echo "Super Admin seed skipped/failure"
-
 EXPOSE 3000
-CMD ["npm", "start"]
+
+# ✅ Run migrations and seed at container startup
+CMD npx prisma migrate deploy && \
+    node src/app/lib/seeds/assign-superAdmin.ts && \
+    npm start
