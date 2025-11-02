@@ -11,10 +11,10 @@ export async function seedSuperAdmin() {
   const crypto = await import("crypto");
   const bcrypt = await import("bcryptjs");
   const { PrismaClient } = await import("@prisma/client");
-  const { nowTimestamp } = await import("../../../lib/utils/time.ts");
+  const { nowTimestamp } = await import("../lib/utils/time");
 
   // Load environment variables
-  const ENV_PATH = path.resolve(__dirname, "../../../../.env");
+  const ENV_PATH = path.resolve(__dirname, "../.env");
   dotenv.config({ path: ENV_PATH });
 
   const SUPER_ADMIN_EMAIL = "super@system.com";
