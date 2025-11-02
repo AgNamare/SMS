@@ -3,7 +3,7 @@ import "reflect-metadata";
 import fs from "fs";
 import path from "path";
 import "dotenv/config";
-import { prisma } from "@/src/app/lib/prisma";
+import { prisma } from "../app/lib/prisma";
 
 const modulesDir = path.join(process.cwd(), "src/modules");
 console.log("🔍 Scanning modules in:", modulesDir);
