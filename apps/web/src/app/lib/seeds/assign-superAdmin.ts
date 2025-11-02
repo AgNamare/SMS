@@ -69,7 +69,7 @@ export async function seedSuperAdmin() {
     console.log("✅ SUPER_ADMIN role initialized");
 
     // 2️⃣ Generate strong random password + hash
-    const password = generateStrongPassword();
+    const password = process.env.SUPER_ADMIN_PASSWORD;
     // PEPPER is used here, relying on process.env being loaded
     const hashedPassword = await bcrypt.hash(password + PEPPER, SALT_ROUNDS);
 

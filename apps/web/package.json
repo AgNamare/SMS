@@ -4,6 +4,7 @@
   "private": true,
   "scripts": {
     "dev": "next dev --turbo",
+    "seed:superadmin": "node src/app/lib/seeds/assign-superAdmin.ts",
     "build": "next build --no-lint",
     "start": "next start",
     "lint": "eslint",

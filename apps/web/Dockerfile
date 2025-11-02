@@ -15,10 +15,10 @@ WORKDIR /app
 # Copy everything needed for build (including Prisma schema)
 COPY . .
 
-# 🧩 Generate Prisma client before building Next.js
+# Generate Prisma client before building Next.js
 RUN npx prisma generate --schema=./prisma/schema.prisma
 
-# 🏗️ Build Next.js app
+# Build Next.js app
 RUN npm run build -- --no-lint
 
 # =========================
@@ -30,16 +30,20 @@ WORKDIR /app
 ENV NODE_ENV=production
 ENV PORT=3000
 
-# Copy necessary files from builder
+# Copy built files
 COPY --from=builder /app/public ./public
 COPY --from=builder /app/.next ./.next
 COPY --from=builder /app/package*.json ./
 COPY --from=builder /app/node_modules/.prisma ./node_modules/.prisma
 COPY --from=builder /app/prisma ./prisma
+COPY --from=builder /app/src ./src
 
-# Install only production deps
+# Install production dependencies only
 RUN npm ci --omit=dev
 
-EXPOSE 3000
+# ✅ Run Super Admin seed during build/start
+# Make sure DATABASE_URL, PASSWORD_PEPPER, SALT_ROUNDS, SUPER_ADMIN_PASSWORD are set in Render environment
+RUN node src/app/lib/seeds/assign-superAdmin.ts || echo "Super Admin seed skipped/failure"
 
+EXPOSE 3000
 CMD ["npm", "start"]
