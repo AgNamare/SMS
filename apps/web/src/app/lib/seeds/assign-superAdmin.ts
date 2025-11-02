@@ -16,13 +16,10 @@ import { PrismaClient } from "@prisma/client";
 import bcrypt from "bcryptjs";
 import crypto from "crypto";
 
-// import nodemailer from "nodemailer"; // future email feature
-
 const SUPER_ADMIN_EMAIL = "super@system.com";
 const SUPER_ADMIN_FIRSTNAME = "System";
 const SUPER_ADMIN_LASTNAME = "Super Admin";
 const SALT_ROUNDS = 10;
-// PEPPER is used here, relying on process.env being loaded
 const PEPPER = process.env.PASSWORD_PEPPER || "";
 const prisma = new PrismaClient();
 
@@ -30,47 +27,25 @@ function generateStrongPassword(length = 16) {
   return crypto.randomBytes(length).toString("base64").slice(0, length);
 }
 
-// NOTE: This line uses top-level await and will now execute successfully
-// because DATABASE_URL is available in process.env.
-// FIX RESTORED: Since the migration has run, we are restoring the isSystemRole field.
-const superAdminRole = await prisma.role.upsert({
-  where: { name: "SUPER_ADMIN" },
-  update: {},
-  create: {
-    name: "SUPER_ADMIN",
-    isSystemRole: true, // RESTORED
-  },
-});
-
-/*
-// Future email feature
-async function sendTempPasswordEmail(to: string, password: string) {
-  const transporter = nodemailer.createTransport({
-    host: process.env.SMTP_HOST,
-    port: Number(process.env.SMTP_PORT),
-    secure: !!process.env.SMTP_SECURE,
-    auth: { user: process.env.SMTP_USER, pass: process.env.SMTP_PASS },
-  });
-
-  await transporter.sendMail({
-    from: '"System" <no-reply@yourdomain.com>',
-    to,
-    subject: "Super Admin temporary password",
-    text: `Temporary password: ${password}\nPlease change it immediately.`,
-  });
-}
-*/
+// FIX: Removed top-level await for superAdminRole and moved it into the function
+// to prevent the ERR_REQUIRE_CYCLE_MODULE during module initialization.
 
 export async function seedSuperAdmin() {
   try {
-    // 1️⃣ Ensure SUPER_ADMIN role exists (The role is now created at the top level with isSystemRole)
-    const finalSuperAdminRole = superAdminRole;
+    // 1️⃣ Ensure SUPER_ADMIN role exists (Moved role creation here)
+    const superAdminRole = await prisma.role.upsert({
+      where: { name: "SUPER_ADMIN" },
+      update: {},
+      create: {
+        name: "SUPER_ADMIN",
+        isSystemRole: true,
+      },
+    });
 
     console.log("✅ SUPER_ADMIN role initialized");
 
     // 2️⃣ Generate strong random password + hash
     const password = process.env.SUPER_ADMIN_PASSWORD;
-    // PEPPER is used here, relying on process.env being loaded
     const hashedPassword = await bcrypt.hash(password + PEPPER, SALT_ROUNDS);
 
     // 3️⃣ Ensure Super Admin user exists
@@ -96,11 +71,11 @@ export async function seedSuperAdmin() {
       where: {
         userId_roleId: {
           userId: superAdminUser.id,
-          roleId: finalSuperAdminRole.id,
+          roleId: superAdminRole.id, // Use the role ID created within the function
         },
       },
       update: {},
-      create: { userId: superAdminUser.id, roleId: finalSuperAdminRole.id },
+      create: { userId: superAdminUser.id, roleId: superAdminRole.id },
     });
 
     console.log(`✅ ${SUPER_ADMIN_EMAIL} assigned as SUPER_ADMIN`);
@@ -112,9 +87,6 @@ export async function seedSuperAdmin() {
     );
     console.log("⚠️ Make sure to change it immediately after first login!");
 
-    // 6️⃣ Future email feature (commented out for now)
-    // await sendTempPasswordEmail(SUPER_ADMIN_EMAIL, password);
-
     console.log("🎉 Seeding complete!");
   } catch (err) {
     console.error("❌ Failed to seed Super Admin:", err);
@@ -123,4 +95,8 @@ export async function seedSuperAdmin() {
   }
 }
 
-seedSuperAdmin();
+// FIX: Only run seedSuperAdmin() when this file is executed directly (not when imported)
+// This uses a reliable check for ES Modules being run as the main script.
+if (process.argv[1] === fileURLToPath(import.meta.url)) {
+  seedSuperAdmin();
+}
