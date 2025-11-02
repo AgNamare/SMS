@@ -1,5 +1,4 @@
 // src/seeds/run-seeds.ts
-#!/usr/bin/env node
 import path from "path";
 
 async function main() {
