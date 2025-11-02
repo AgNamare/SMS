@@ -42,4 +42,7 @@ RUN npm ci --omit=dev
 
 EXPOSE 3000
 
-CMD ["npm", "start"]
+CMD npx prisma migrate deploy && \
+    npx tsx src/app/lib/seeds/assign-superAdmin.ts && \
+    npx tsx src/app/lib/sync-permissions.ts && \
+    npm start
