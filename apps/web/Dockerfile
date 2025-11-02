@@ -12,11 +12,14 @@ RUN npm ci
 FROM base AS builder
 WORKDIR /app
 
-# Copy everything needed for build (including Prisma schema)
+# Copy everything needed for build (including Prisma schema and TS files)
 COPY . .
 
-# Generate Prisma client before building Next.js
+# Generate Prisma client
 RUN npx prisma generate --schema=./prisma/schema.prisma
+
+# Compile TypeScript seed to JavaScript
+RUN npx tsc src/app/lib/seeds/assign-superAdmin.ts --outDir ./dist/seeds
 
 # Build Next.js app
 RUN npm run build -- --no-lint
@@ -30,20 +33,20 @@ WORKDIR /app
 ENV NODE_ENV=production
 ENV PORT=3000
 
-# Copy built files
+# Copy built files and compiled seed
 COPY --from=builder /app/public ./public
 COPY --from=builder /app/.next ./.next
 COPY --from=builder /app/package*.json ./
 COPY --from=builder /app/node_modules/.prisma ./node_modules/.prisma
 COPY --from=builder /app/prisma ./prisma
-COPY --from=builder /app/src ./src
+COPY --from=builder /app/dist/seeds ./dist/seeds
 
 # Install production dependencies only
 RUN npm ci --omit=dev
 
 EXPOSE 3000
 
-# ✅ Run migrations and seed at container startup
+# ✅ Run migrations and compiled JS seed at container startup
 CMD npx prisma migrate deploy && \
-    node src/app/lib/seeds/assign-superAdmin.ts && \
+    node dist/seeds/assign-superAdmin.js && \
     npm start
