@@ -1,0 +1,179 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+model User {
+  email          String     @unique
+  themeId        String?
+  password       String
+  updatedAt      Int
+  id             Int        @id @default(autoincrement())
+  createdAt      Int
+  first_name     String
+  last_name      String
+  profile_photo  String
+  status         Int        @default(1)
+  branches       Branch[]   @relation("BranchManager")
+  logs           Log[]
+  primarySchools School[]   @relation("PrimaryContact")
+  roles          UserRole[]
+}
+
+model Role {
+  name         String       @unique
+  isSystemRole Boolean?     @default(false)
+  id           Int          @id @default(autoincrement())
+  UserRole     UserRole[]
+  permissions  Permission[] @relation("RoleToPermissions")
+}
+
+model Permission {
+  module      String?
+  createdAt   DateTime @default(now())
+  description String?
+  name        String   @unique
+  updatedAt   DateTime @updatedAt
+  id          Int      @id @default(autoincrement())
+  roles       Role[]   @relation("RoleToPermissions")
+}
+
+model School {
+  created_at          Int
+  updated_at          Int
+  id                  Int       @id @default(autoincrement())
+  address_line1       String?
+  city                String?
+  display_name        String
+  email               String?
+  established_date    DateTime?
+  legal_name          String
+  logo_url            String?
+  motto               String?
+  phone_main          String?
+  primary_contact_id  Int?
+  registration_number String?
+  status              String    @default("active")
+  type                String
+  website             String?
+  branches            Branch[]
+  primary_contact     User?     @relation("PrimaryContact", fields: [primary_contact_id], references: [id])
+}
+
+model Branch {
+  branch_name         String
+  branch_address      String?
+  branch_email        String?
+  branch_phone_number String?
+  opening_time        String?
+  closing_time        String?
+  created_at          Int
+  updated_at          Int
+  id                  Int     @id @default(autoincrement())
+  school_id           Int
+  branch_code         String? @unique
+  branch_manager_id   Int?
+  is_active           Boolean @default(true)
+  branch_manager      User?   @relation("BranchManager", fields: [branch_manager_id], references: [id])
+  school              School  @relation(fields: [school_id], references: [id])
+}
+
+model UserRole {
+  userId Int
+  roleId Int
+  role   Role @relation(fields: [roleId], references: [id])
+  user   User @relation(fields: [userId], references: [id])
+
+  @@unique([userId, roleId])
+}
+
+model Log {
+  id          Int    @id @default(autoincrement())
+  action      String
+  module      String
+  description String
+  user_id     Int?
+  createdAt   Int
+  user        User?  @relation(fields: [user_id], references: [id])
+}
+
+model Enquiry {
+  id                  Int          @id @default(autoincrement())
+  enquiry_no          String       @unique
+  student_first_name  String
+  student_middle_name String?
+  student_last_name   String
+  guardian_first_name String
+  guardian_last_name  String
+  contact_number      String
+  email               String?
+  academic_year       Int
+  source_of_enquiry   String
+  status              String
+  remarks             String?
+  next_follow_up_date DateTime?
+  created_at          Int
+  updated_at          Int
+  application         Application?
+}
+
+model Application {
+  id                  Int        @id @default(autoincrement())
+  application_no      String     @unique
+  enquiry_id          Int?       @unique
+  student_first_name  String
+  student_middle_name String?
+  student_last_name   String
+  guardian_first_name String
+  guardian_last_name  String
+  dob                 DateTime
+  gender              Int
+  religion            String?
+  previous_school     String?
+  previous_class      String?
+  academic_year       Int
+  class_applied       String
+  address             String
+  document            String?
+  application_status  String
+  created_at          Int
+  updated_at          Int
+  admission           Admission?
+  enquiry             Enquiry?   @relation(fields: [enquiry_id], references: [id])
+}
+
+model Admission {
+  id               Int          @id @default(autoincrement())
+  admission_no     String       @unique
+  application_id   Int?         @unique
+  student_id       Int?
+  admission_date   DateTime
+  academic_year    Int
+  admitted_class   String
+  batch_id         Int?
+  admission_status String
+  fee_structure_id Int?
+  remarks          String?
+  created_at       Int
+  updated_at       Int
+  application      Application? @relation(fields: [application_id], references: [id])
+  enrollments      Enrollment[]
+}
+
+model Enrollment {
+  id                Int       @id @default(autoincrement())
+  student_id        Int
+  admission_id      Int
+  subject_id        Int?
+  batch_id          Int?
+  term_id           Int?
+  start_date        DateTime
+  end_date          DateTime?
+  enrollment_status String
+  remarks           String?
+  admission         Admission @relation(fields: [admission_id], references: [id])
+}
