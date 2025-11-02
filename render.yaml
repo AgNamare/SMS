@@ -5,6 +5,7 @@ services:
     env: docker
     plan: free
     dockerContext: ./apps/web
+    dockerfilePath: ./apps/web/Dockerfile
     envVars:
       - key: NODE_ENV
         value: production
