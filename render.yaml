@@ -25,7 +25,6 @@ services:
     startCommand: >
       npx prisma migrate deploy &&
       npx tsx src/seeds/run-seeds.ts &&
-      npx tsx src/app/lib/sync-permissions.ts &&
       npm start
 
 databases:
