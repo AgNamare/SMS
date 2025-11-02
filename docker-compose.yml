@@ -1,0 +1,40 @@
+version: "3.8"
+
+services:
+  web:
+    build:
+      context: ./apps/web
+      dockerfile: Dockerfile
+    container_name: nextjs-web
+    ports:
+      - "3000:3000"
+    env_file:
+      - ./apps/web/.env
+    depends_on:
+      - postgres
+    environment:
+      DATABASE_URL: postgres://admin:password@postgres:5432/school_management
+      NODE_ENV: ${MODE:-dev}
+      MODE: ${MODE:-dev}
+    volumes:
+      - ./apps/web:/app
+      - /app/node_modules
+    command: >
+      sh -c "if [ '$$MODE' = 'prod' ]; then
+        npm run build -- --no-lint && npm run start;
+      else
+        npm run dev;
+      fi"
+
+  postgres:
+    image: postgres:16
+    container_name: postgres-db
+    restart: always
+    environment:
+      POSTGRES_USER: admin
+      POSTGRES_PASSWORD: password
+      POSTGRES_DB: school_management
+    ports:
+      - "5432:5432"
+    volumes:
+      - ./docker/postgres/data:/var/lib/postgresql/data

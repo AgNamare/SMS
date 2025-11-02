@@ -1,0 +1,196 @@
+.
+
+🏫 School Management System — Project Architecture
+
+This project is a modular, service-oriented Next.js + Prisma application that manages multi-branch schools.
+It follows Clean Architecture principles, separating domain logic, data access, services, and routes into distinct layers for scalability and maintainability.
+
+🧭 Overview
+
+The system is organized around modules (e.g., school, branch, student, etc.), each containing:
+
+Repositories — interact directly with the database via Prisma
+
+Services — contain business logic
+
+Routes — handle API requests and responses
+
+Additionally, the app leverages Next.js’s App Router, Server Components, and API routes under src/app/api.
+
+📂 Project Structure
+src/
+├── app/
+│   ├── api/
+│   │   ├── schools/
+│   │   │   └── route.ts            # API endpoint → /api/schools
+│   │   ├── branches/
+│   │   │   └── route.ts            # API endpoint → /api/branches
+│   │   └── ...
+│   ├── (dashboard)/
+│   │   ├── schools/
+│   │   │   └── page.tsx            # UI page → /schools
+│   │   ├── branches/
+│   │   │   └── page.tsx            # UI page → /branches
+│   │   └── ...
+│   └── layout.tsx
+│
+├── lib/
+│   ├── prisma.ts                    # Singleton Prisma client instance
+│   ├── utils/
+│   │   └── time.ts                  # Helper for timestamps (e.g. nowTimestamp)
+│   └── ...
+│
+├── modules/
+│   ├── core/
+│   │   ├── repositories/
+│   │   │   └── base-repository.ts   # Generic CRUD repository (extends Prisma model)
+│   │   ├── services/
+│   │   │   └── base-service.ts      # Generic CRUD service (wraps repositories)
+│   │   └── routes/
+│   │       └── base-route.ts        # Generic API route handler (Next.js API wrapper)
+│   │
+│   ├── school/
+│   │   ├── repositories/
+│   │   │   └── school-repository.ts # Prisma repository for School model
+│   │   ├── services/
+│   │   │   └── school-service.ts    # Business logic for schools
+│   │   └── routes/
+│   │       └── school-route.ts      # API controller for school endpoints
+│   │
+│   ├── branch/
+│   │   ├── repositories/
+│   │   │   └── branch-repository.ts # Branch repository with school relation
+│   │   └── ...
+│   │
+│   └── ...
+│
+└── prisma/
+    └── schema.prisma                # Prisma schema defining School, Branch, etc.
+
+🧩 Architectural Layers
+1. Repository Layer (BaseRepository)
+
+Handles database access using Prisma.
+
+// Example: BaseRepository
+export abstract class BaseRepository<T> {
+  constructor(protected model: any) {}
+  async create(data: Partial<T>) { return this.model.create({ data }); }
+  async list(params?: any) { return this.model.findMany(params); }
+  async findById(id: string) { return this.model.findUnique({ where: { id } }); }
+  async update(id: string, data: Partial<T>) { return this.model.update({ where: { id }, data }); }
+  async delete(id: string) { return this.model.delete({ where: { id } }); }
+}
+
+
+Each module (e.g., SchoolRepository, BranchRepository) extends this to handle its specific Prisma model.
+
+2. Service Layer (BaseService)
+
+Contains business logic and orchestrates multiple repositories.
+
+export class SchoolService extends BaseService<School, SchoolRepository> {
+  constructor(private branchRepo = new BranchRepository()) {
+    super(new SchoolRepository());
+  }
+
+  async addBranch(data) {
+    return this.branchRepo.create({
+      ...data,
+      created_at: nowTimestamp(),
+      updated_at: nowTimestamp(),
+    });
+  }
+}
+
+3. Route Layer (BaseRoute)
+
+Handles HTTP requests/responses, wrapping logic in consistent API responses.
+
+export abstract class BaseRoute<TService> {
+  constructor(protected service: TService) {}
+
+  protected jsonResponse(data: any, status = 200) {
+    return NextResponse.json({ success: true, data }, { status });
+  }
+
+  protected errorResponse(error: any, status = 500) {
+    return NextResponse.json({ success: false, message: error?.message }, { status });
+  }
+}
+
+
+Then, each module implements its own route, e.g.:
+
+export class SchoolRoute extends BaseRoute<SchoolService> {
+  constructor() {
+    super(new SchoolService());
+  }
+
+  async handleGet() {
+    const data = await this.service.getAll();
+    return this.jsonResponse(data);
+  }
+}
+
+🧠 Request Flow Example
+
+When you hit:
+
+GET /api/schools
+
+
+The following happens:
+
+route.ts
+
+SchoolRoute.handleGet() is called.
+
+SchoolRoute
+
+Calls SchoolService.getAll().
+
+SchoolService
+
+Calls SchoolRepository.list().
+
+SchoolRepository
+
+Executes prisma.school.findMany() and returns data.
+
+🧱 Key Design Principles
+
+Modular architecture — each feature (school, branch, etc.) is isolated.
+
+Separation of concerns — repositories (data), services (logic), routes (API).
+
+Generic base classes — promote code reuse and consistency.
+
+Extendable — easily add new modules (students, teachers, classes, etc.).
+
+Next.js 15 App Router compatible — works seamlessly with route.ts and page.tsx.
+
+🧩 Example Extension
+
+To add a Student module, you’d do:
+
+src/modules/student/
+├── repositories/student-repository.ts
+├── services/student-service.ts
+└── routes/student-route.ts
+
+
+Each extends the base classes:
+
+StudentRepository extends BaseRepository<Student>
+
+StudentService extends BaseService<Student, StudentRepository>
+
+StudentRoute extends BaseRoute<StudentService>
+
+🚀 API & Page Routing
+Type	Path	Source	Description
+API	/api/schools	src/app/api/schools/route.ts	CRUD endpoints for schools
+API	/api/branches	src/app/api/branches/route.ts	Manage branches
+Page	/schools	src/app/(dashboard)/schools/page.tsx	Frontend school dashboard
+Page	/branches	src/app/(dashboard)/branches/page.tsx

@@ -1,0 +1,29 @@
+Permission System
+Overview
+
+The permission system is a Role-Based Access Control (RBAC) mechanism designed to manage access to various operations in the school management system. It provides fine-grained control over which roles can perform specific actions across different modules of the application.
+
+How It Works
+
+Permissions Definition:
+Permissions are defined using a method-level decorator @Permission(module, action) applied to service methods.
+
+module represents the logical grouping (e.g., "students").
+
+action represents the specific operation (e.g., "create" or "find").
+
+Metadata Storage:
+The decorator attaches metadata to the method using reflect-metadata. This metadata is later read by a sync script to populate the database.
+
+Permissions Database:
+All defined permissions are stored in the Permission table. Each permission has a unique name in the format module:action, along with optional description and module fields.
+
+Sync Script:
+A script scans all service classes for decorated methods, retrieves the metadata, and upserts the permissions into the database.
+Example command:
+
+npx tsx src/lib/permissions/syncPermissions.ts
+
+
+Role Assignment and Access Control:
+Permissions can be assigned to roles. When a user attempts to perform an action, the system checks the user's role for the corresponding permission. This ensures that only authorized roles can access specific operations.
