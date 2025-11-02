@@ -41,8 +41,10 @@ COPY --from=builder /app/src ./src
 # Install production dependencies only
 RUN npm ci --omit=dev
 
-# ✅ Run Super Admin seed during build/start
-# Make sure DATABASE_URL, PASSWORD_PEPPER, SALT_ROUNDS, SUPER_ADMIN_PASSWORD are set in Render environment
+# ✅ Apply migrations first
+RUN npx prisma migrate deploy
+
+# ✅ Seed Super Admin after migrations
 RUN node src/app/lib/seeds/assign-superAdmin.ts || echo "Super Admin seed skipped/failure"
 
 EXPOSE 3000
